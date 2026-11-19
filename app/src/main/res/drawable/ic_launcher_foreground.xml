@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A thin gold wheel with spokes and a small pointer on top -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- outer ring -->
+    <path
+        android:strokeColor="#C8A96A"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,32 A22,22 0 1,1 53.99,32 Z" />
+    <!-- spokes -->
+    <path
+        android:strokeColor="#C8A96A"
+        android:strokeWidth="1.5"
+        android:pathData="M54,32 L54,76 M32,54 L76,54 M38.4,38.4 L69.6,69.6 M69.6,38.4 L38.4,69.6" />
+    <!-- hub -->
+    <path
+        android:fillColor="#C8A96A"
+        android:pathData="M54,48 A6,6 0 1,1 53.99,48 Z" />
+    <!-- pointer -->
+    <path
+        android:fillColor="#F2EDE4"
+        android:pathData="M49,25 L59,25 L54,33 Z" />
+</vector>
