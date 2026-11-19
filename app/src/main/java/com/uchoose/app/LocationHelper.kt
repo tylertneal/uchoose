@@ -14,31 +14,41 @@ import kotlin.coroutines.resume
 /** Gets the phone's location with the built-in LocationManager (no Google Play Services needed). */
 object LocationHelper {
 
+    private const val FRESH_MS = 30 * 60 * 1000L   // a fix this recent is good enough
+
+    private var lastFix: Location? = null
+
     @SuppressLint("MissingPermission")
     suspend fun current(context: Context): Location? {
+        val now = System.currentTimeMillis()
+        lastFix?.let { if (now - it.time < FRESH_MS) return it }
+
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val providers = listOf(
-            LocationManager.GPS_PROVIDER,
             LocationManager.NETWORK_PROVIDER,
+            LocationManager.GPS_PROVIDER,
             LocationManager.PASSIVE_PROVIDER,
         ).filter { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) }
 
-        // A recent cached fix (under 10 minutes old) is good enough for finding restaurants.
+        // Restaurants are miles apart, so the phone's last known spot is usually fine.
         val cached = providers
             .mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
             .maxByOrNull { it.time }
-        if (cached != null && System.currentTimeMillis() - cached.time < 10 * 60 * 1000) {
+        if (cached != null && now - cached.time < FRESH_MS) {
+            lastFix = cached
             return cached
         }
 
+        // Wi-Fi/cell location answers in a second or two; GPS can take much longer indoors.
         val provider = when {
             LocationManager.NETWORK_PROVIDER in providers -> LocationManager.NETWORK_PROVIDER
             LocationManager.GPS_PROVIDER in providers -> LocationManager.GPS_PROVIDER
-            else -> return cached
+            else -> null
         }
-
-        val fresh = withTimeoutOrNull(15_000) { requestOnce(lm, provider) }
-        return fresh ?: cached
+        val fresh = provider?.let { withTimeoutOrNull(8_000) { requestOnce(lm, it) } }
+        val result = fresh ?: cached
+        if (result != null) lastFix = result
+        return result
     }
 
     @SuppressLint("MissingPermission")

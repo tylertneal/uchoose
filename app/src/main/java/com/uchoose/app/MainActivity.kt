@@ -78,6 +78,14 @@ fun App() {
         context, Manifest.permission.ACCESS_COARSE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED
 
+    // Warm up location + restaurant data while the user is still on the home screen.
+    LaunchedEffect(Unit) {
+        if (hasLocation()) {
+            val loc = LocationHelper.current(context)
+            if (loc != null) RestaurantRepository.prefetch(loc.latitude, loc.longitude)
+        }
+    }
+
     var pending by remember { mutableStateOf<Category?>(null) }
     var permissionDenied by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -196,11 +204,14 @@ fun WheelScreen(category: Category, onBack: () -> Unit, onChosen: (Restaurant) -
     var attempt by remember { mutableIntStateOf(0) }
     val rotation = remember { Animatable(0f) }
     var spinning by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("Finding your location…") }
 
     LaunchedEffect(category, attempt) {
         state = LoadState.Loading
+        status = "Finding your location…"
         state = try {
             val loc = LocationHelper.current(context)
+            status = "Searching for restaurants…"
             if (loc == null) {
                 LoadState.Error("Couldn't get your location. Make sure Location is turned on.")
             } else {
@@ -238,7 +249,7 @@ fun WheelScreen(category: Category, onBack: () -> Unit, onChosen: (Restaurant) -
                 Spacer(Modifier.height(80.dp))
                 CircularProgressIndicator(color = Palette.Gold, strokeWidth = 1.5.dp)
                 Spacer(Modifier.height(20.dp))
-                Text("Finding restaurants near you…", style = Type.Body)
+                Text(status, style = Type.Body)
             }
             is LoadState.Error -> {
                 Spacer(Modifier.height(80.dp))
