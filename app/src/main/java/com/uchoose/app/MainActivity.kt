@@ -371,6 +371,11 @@ fun WheelScreen(
                     "${items.size} places within $radiusMiles mi",
                     style = Type.Body.copy(fontSize = 13.sp),
                 )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "Restaurant data © OpenStreetMap contributors",
+                    style = Type.Body.copy(fontSize = 11.sp, color = Palette.Muted.copy(alpha = 0.6f)),
+                )
             }
         }
     }

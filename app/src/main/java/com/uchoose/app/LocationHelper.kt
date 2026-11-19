@@ -7,6 +7,9 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
 import android.os.Looper
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
@@ -39,16 +42,28 @@ object LocationHelper {
             return cached
         }
 
-        // Wi-Fi/cell location answers in a second or two; GPS can take much longer indoors.
-        val provider = when {
-            LocationManager.NETWORK_PROVIDER in providers -> LocationManager.NETWORK_PROVIDER
-            LocationManager.GPS_PROVIDER in providers -> LocationManager.GPS_PROVIDER
-            else -> null
-        }
-        val fresh = provider?.let { withTimeoutOrNull(8_000) { requestOnce(lm, it) } }
+        // Ask Wi-Fi/cell and GPS at the same time and use whichever answers first.
+        val live = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER)
+            .filter { it in providers }
+        val fresh = if (live.isEmpty()) null else withTimeoutOrNull(8_000) { firstFix(lm, live) }
         val result = fresh ?: cached
         if (result != null) lastFix = result
         return result
+    }
+
+    private suspend fun firstFix(lm: LocationManager, providers: List<String>): Location? = coroutineScope {
+        val results = Channel<Location?>(providers.size)
+        val jobs = providers.map { p ->
+            launch { results.send(runCatching { requestOnce(lm, p) }.getOrNull()) }
+        }
+        var fix: Location? = null
+        var received = 0
+        while (fix == null && received < providers.size) {
+            fix = results.receive()
+            received++
+        }
+        jobs.forEach { it.cancel() }
+        fix
     }
 
     @SuppressLint("MissingPermission")
