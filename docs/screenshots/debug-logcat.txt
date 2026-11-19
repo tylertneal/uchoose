@@ -1,0 +1,200 @@
+11-19 22:17:22.617  6882  6882 D LocalBluetoothProfileManager: Adding local Hearing Aid profile
+11-19 22:17:22.617  6882  6882 D BluetoothHearingAid: Binding service...
+11-19 22:17:22.618  6689  6867 D BluetoothManagerService: Trying to bind to profile: 21, while Bluetooth was disabled
+11-19 22:17:22.618  6689  6867 I MR2ServiceImpl: registerManager | uid: 10168, pid: 6882, package: com.android.systemui, user: 0
+11-19 22:17:22.622  6689  6867 W ActivityManager: Unable to start service Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } U=0: not found
+11-19 22:17:22.623  6689  6867 W RemoteSmartspaceService: could not bind to Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } using flags 67112961
+11-19 22:17:22.624  6882  6882 D KeyguardBouncerRepositoryImpl: Keyguard Bouncer is hiding.
+11-19 22:17:22.625  6689  6867 W ActivityManager: Unable to start service Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } U=0: not found
+11-19 22:17:22.626  6689  6867 W RemoteSmartspaceService: could not bind to Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } using flags 67112961
+11-19 22:17:22.626  6689  6867 W ActivityManager: Unable to start service Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } U=0: not found
+11-19 22:17:22.626  6689  6867 W RemoteSmartspaceService: could not bind to Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } using flags 67112961
+11-19 22:17:22.626  6689  6867 W ActivityManager: Unable to start service Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } U=0: not found
+11-19 22:17:22.626  6689  6867 W RemoteSmartspaceService: could not bind to Intent { act=android.service.smartspace.SmartspaceService cmp=com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiSmartspaceService } using flags 67112961
+11-19 22:17:22.632  6882  6882 D BiometricsRepositoryImpl: Registering StrongAuthTracker
+11-19 22:17:22.633  6882  6882 D BiometricsRepositoryImpl: currentUser authFlags changed, new value: AuthenticationFlags(userId=0, flag=1)
+11-19 22:17:22.634  6882  6882 D BiometricsRepositoryImpl: isNonStrongBiometricAllowed changed for current user
+11-19 22:17:22.636  6882  6882 W AlarmManager: Unrecognized alarm listener com.android.systemui.keyguard.KeyguardSliceProvider$$ExternalSyntheticLambda0@449ac68
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: Nofity service of inheritance info
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: java.lang.IllegalStateException: User 0 must be unlocked for widgets to be available
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3065)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.Parcel.createException(Parcel.java:3041)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.Parcel.readException(Parcel.java:3024)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.Parcel.readException(Parcel.java:2966)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at com.android.internal.appwidget.IAppWidgetService$Stub$Proxy.getInstalledProvidersForProfile(IAppWidgetService.java:990)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.appwidget.AppWidgetManager.getInstalledProvidersForProfile(AppWidgetManager.java:923)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.appwidget.AppWidgetManager.getInstalledProvidersForPackage(AppWidgetManager.java:857)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.appwidget.AppWidgetManager.lambda$new$3(AppWidgetManager.java:536)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.appwidget.AppWidgetManager.$r8$lambda$MnZCUjy90wcD58stsygv3SVPbu4(Unknown Source:0)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.appwidget.AppWidgetManager$$ExternalSyntheticLambda4.run(Unknown Source:2)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.Handler.handleCallback(Handler.java:958)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.Handler.dispatchMessage(Handler.java:99)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.Looper.loopOnce(Looper.java:205)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.Looper.loop(Looper.java:294)
+11-19 22:17:22.639  6882  6942 E AppWidgetManager: 	at android.os.HandlerThread.run(HandlerThread.java:67)
+11-19 22:17:22.644  6882  6882 V SystemUIBootTiming: DependencyInjection took to complete: 0ms
+11-19 22:17:22.644   398   415 E EGL_emulation: eglQueryContext 3100  EGL_BAD_ATTRIBUTE
+11-19 22:17:22.644   398   415 E EGL_emulation: tid 415: eglQueryContext(2146): error 0x3004 (EGL_BAD_ATTRIBUTE)
+11-19 22:17:22.648  6882  6882 I SystemUIService: Found SurfaceFlinger's GPU Priority: 0
+11-19 22:17:22.649  6689  6867 I ActivityManager: Flag disabled. Ignoring finishAttachApplication from uid: 10168. pid: 6882
+11-19 22:17:22.651  6882  6882 D DLObserver: onDockEvent mDockState = 0
+11-19 22:17:22.652  6882  6968 W KeyguardUpdateMonitorLog: invalid subId in handleServiceStateChange()
+11-19 22:17:22.652  6882  6968 W KeyguardUpdateMonitorLog: invalid subId in handleSimStateChange()
+11-19 22:17:22.689  6689  6700 W System  : A resource failed to call release. 
+11-19 22:17:22.689  6689  6700 W System  : A resource failed to call release. 
+11-19 22:17:22.689  6689  6700 W System  : A resource failed to call release. 
+11-19 22:17:22.692  6689  6717 D WallpaperManagerService: WPMS.saveSettingsLocked-0
+11-19 22:17:22.693  6689  6717 V WallpaperManagerService: WPMS.saveSettingsLocked-0 took to complete: 1ms
+11-19 22:17:22.694  6882  6882 D Tonal   : Tonal Palette - index: 4. Main color: ff343e65
+11-19 22:17:22.694  6882  6882 D Tonal   : Colors: ff0b0c16, ff141627, ff1d2138, ff272d4c, ff343e65, ff41477e, ff4e5597, ff8184a4, ff898cc3, ff9e9ecd, ffb7b6d9, ffd9d7eb, ffefeef7
+11-19 22:17:22.694  6882  6882 D Tonal   : Gradients: 
+11-19 22:17:22.694  6882  6882 D Tonal   : 	Normal GradientColors(ff343e65, ff343e65)
+11-19 22:17:22.694  6882  6882 D Tonal   : 	Dark GradientColors(ff272d4c, ff272d4c)
+11-19 22:17:22.694  6882  6882 D Tonal   : 	Extra dark: GradientColors(ff1d2138, ff1d2138)
+11-19 22:17:22.694  6882  6882 D Tonal   : Tonal Palette - index: 4. Main color: ff343e65
+11-19 22:17:22.694  6882  6882 D Tonal   : Colors: ff0b0c16, ff141627, ff1d2138, ff272d4c, ff343e65, ff41477e, ff4e5597, ff8184a4, ff898cc3, ff9e9ecd, ffb7b6d9, ffd9d7eb, ffefeef7
+11-19 22:17:22.694  6882  6882 D Tonal   : Gradients: 
+11-19 22:17:22.694  6882  6882 D Tonal   : 	Normal GradientColors(ff343e65, ff343e65)
+11-19 22:17:22.694  6882  6882 D Tonal   : 	Dark GradientColors(ff272d4c, ff272d4c)
+11-19 22:17:22.694  6882  6882 D Tonal   : 	Extra dark: GradientColors(ff1d2138, ff1d2138)
+11-19 22:17:23.800  6599  6599 D AndroidRuntime: Shutting down VM
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: FATAL EXCEPTION: main
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: PID: 6599
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: java.lang.RuntimeException: java.util.concurrent.TimeoutException: Timeout while connecting UiAutomation@118d735[id=-1, displayId=0, flags=0]
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.app.UiAutomation.connect(UiAutomation.java:328)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at com.android.uiautomator.core.UiAutomationShellWrapper.connect(UiAutomationShellWrapper.java:31)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at com.android.commands.uiautomator.DumpCommand.run(DumpCommand.java:78)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at com.android.commands.uiautomator.Launcher.main(Launcher.java:83)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:359)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: Caused by: java.util.concurrent.TimeoutException: Timeout while connecting UiAutomation@118d735[id=-1, displayId=0, flags=0]
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.app.UiAutomation.connectWithTimeout(UiAutomation.java:405)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.app.UiAutomation.connect(UiAutomation.java:326)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	... 5 more
+11-19 22:17:23.800  6599  6599 E IPCThreadState: Failed to get extended error: Bad file descriptor
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: Error reporting crash
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: java.lang.RuntimeException: Bad file descriptor
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.os.BinderProxy.transactNative(Native Method)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.os.IServiceManager$Stub$Proxy.checkService(IServiceManager.java:443)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.os.ServiceManagerProxy.getService(ServiceManagerNative.java:63)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.os.ServiceManager.rawGetService(ServiceManager.java:378)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.os.ServiceManager.getService(ServiceManager.java:147)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.app.ActivityManager$3.create(ActivityManager.java:5214)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.app.ActivityManager$3.create(ActivityManager.java:5211)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.util.Singleton.get(Singleton.java:43)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at android.app.ActivityManager.getService(ActivityManager.java:5202)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$KillApplicationHandler.uncaughtException(RuntimeInit.java:160)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1071)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1066)
+11-19 22:17:23.800  6599  6599 E AndroidRuntime: 	at java.lang.Thread.dispatchUncaughtException(Thread.java:2306)
+11-19 22:17:23.800  6599  6599 I Process : Sending signal. PID: 6599 SIG: 9
+11-19 22:17:24.134  6689  6811 I WifiClientModeImpl[293305:wlan0]: disconnectedstate enter
+11-19 22:17:24.135  6689  6811 W WifiConnectivityManager: mConnectedSingleSavedNetworkSingleScanScheduleSec is not configured! Using default scan schedule
+11-19 22:17:24.135  6689  6811 W WifiConnectivityManager: mConnectedSingleSavedNetworkSingleScanType is not configured! Using default scan types
+11-19 22:17:24.137  6689  6811 D WifiConfigStore: Writing to stores completed in 1 ms.
+11-19 22:17:24.137  6627  6649 I netd    : interfaceGetCfg(wlan0) -> {InterfaceConfigurationParcel{ifName: wlan0, hwAddr: 02:15:b2:00:00:00, ipv4Addr: 10.0.2.16, prefixLength: 24, flags: [up, broadcast, multicast]}} <0.13ms>
+11-19 22:17:24.614  6852  6852 I AidlLazyServiceRegistrar: Process has 1 (of 1 available) client(s) in use after notification android.hardware.biometrics.fingerprint.IFingerprint/default has clients: 1
+11-19 22:17:24.823     0     0 I servicemanager: Notifying android.hardware.biometrics.fingerprint.IFingerprint/default they do (previously: don't) have clients when service is guaranteed to be in use
+11-19 22:17:24.826     0     0 I servicemanager: Notifying android.hardware.biometrics.fingerprint.IFingerprint/default they don't (previously: do) have clients when we now have no record of a client
+11-19 22:17:24.616  6852  6852 I AidlLazyServiceRegistrar: Process has 0 (of 1 available) client(s) in use after notification android.hardware.biometrics.fingerprint.IFingerprint/default has clients: 0
+11-19 22:17:24.617  6852  6852 I AidlLazyServiceRegistrar: Trying to shut down the service. No clients in use for any service in process.
+11-19 22:17:24.829     0     0 I servicemanager: Notifying apexservice they don't (previously: do) have clients when we now have no record of a client
+11-19 22:17:24.831     0     0 I AidlLazyServiceRegistrar: Process has 0 (of 1 available) client(s) in use after notification apexservice has clients: 0
+11-19 22:17:24.831     0     0 I servicemanager: Unregistering android.hardware.biometrics.fingerprint.IFingerprint/default
+11-19 22:17:24.833     0     0 I AidlLazyServiceRegistrar: Trying to shut down the service. No clients in use for any service in process.
+11-19 22:17:24.625  6852  6852 I AidlLazyServiceRegistrar: Unregistered all clients and exiting
+11-19 22:17:24.836     0     0 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+11-19 22:17:24.838     0     0 I servicemanager: Unregistering apexservice
+11-19 22:17:24.838     0     0 I init    : Service 'vendor.biometrics.fingerprint-service.ranchu' (pid 6852) exited with status 0 oneshot service took 2.727000 seconds in background
+11-19 22:17:24.839     0     0 I BpBinder: onLastStrongRef automatically unlinking death recipients:
+11-19 22:17:24.841     0     0 I init    : Sending signal 9 to service 'vendor.biometrics.fingerprint-service.ranchu' (pid 6852) process group...
+11-19 22:17:24.843     0     0 I AidlLazyServiceRegistrar: Unregistered all clients and exiting
+11-19 22:17:24.845     0     0 I libprocessgroup: Successfully killed process cgroup uid 1000 pid 6852 in 0ms
+11-19 22:17:24.849     0     0 I init    : Service 'apexd' (pid 6715) exited with status 0 oneshot service took 3.900000 seconds in background
+11-19 22:17:24.851     0     0 I init    : Sending signal 9 to service 'apexd' (pid 6715) process group...
+11-19 22:17:24.852     0     0 I libprocessgroup: Successfully killed process cgroup uid 0 pid 6715 in 0ms
+11-19 22:17:24.729   473   851 D BufferPoolAccessor2.0: evictor expired: 6, evicted: 0
+11-19 22:17:24.883  7006  7006 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+11-19 22:17:24.883  7006  7006 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+11-19 22:17:24.895   135   135 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+11-19 22:17:24.895  7006  7007 I Gralloc4: mapper 4.x is not supported
+11-19 22:17:25.104     0     0 I servicemanager: Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest.
+11-19 22:17:25.110  7008  7008 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-19 22:17:25.113  7008  7008 I AndroidRuntime: Using default boot image
+11-19 22:17:25.113  7008  7008 I AndroidRuntime: Leaving lock profiling enabled
+11-19 22:17:25.115  7008  7008 I app_process: Core platform API reporting enabled, enforcing=false
+11-19 22:17:25.115  7008  7008 I app_process: Using CollectorTypeCC GC.
+11-19 22:17:25.189  7008  7008 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+11-19 22:17:25.198  7008  7008 D app_process: Time zone APEX ICU file found: /apex/com.android.tzdata/etc/icu/icu_tzdata.dat
+11-19 22:17:25.198  7008  7008 D app_process: I18n APEX ICU file found: /apex/com.android.i18n/etc/icu/icudt72l.dat
+11-19 22:17:25.204  7008  7008 W app_process: Unexpected CPU variant for x86: x86_64.
+11-19 22:17:25.204  7008  7008 W app_process: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+11-19 22:17:25.206  7008  7008 W app_process: ClassLoaderContext shared library size mismatch. Expected=2, found=0 (PCL[]{PCL[/system/framework/android.test.base.jar*836642756]#PCL[/system/framework/android.test.mock.jar*3186112116]} | PCL[])
+11-19 22:17:25.207  7008  7008 W app_process: ClassLoaderContext classpath size mismatch. expected=0, found=1 (PCL[]{PCL[/system/framework/android.test.runner.jar*4168958247]{PCL[/system/framework/android.test.base.jar*836642756]#PCL[/system/framework/android.test.mock.jar*3186112116]}#PCL[/system/framework/android.test.base.jar*836642756]} | PCL[/system/framework/android.test.runner.jar*4168958247])
+11-19 22:17:25.228  7008  7008 W libc    : Access denied finding property "ro.product.name_for_attestation"
+11-19 22:17:25.228  7008  7008 W libc    : Access denied finding property "ro.product.brand_for_attestation"
+11-19 22:17:25.228  7008  7008 W libc    : Access denied finding property "ro.product.model_for_attestation"
+11-19 22:17:25.230  7008  7008 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-19 22:17:25.226  7008  7008 W main    : type=1400 audit(0.0:171): avc:  denied  { read } for  name="u:object_r:build_attestation_prop:s0" dev="tmpfs" ino=86 scontext=u:r:shell:s0 tcontext=u:object_r:build_attestation_prop:s0 tclass=file permissive=0
+11-19 22:17:25.234  7008  7008 D UiAutomationConnection: Created on user UserHandle{0}
+11-19 22:17:25.234  7008  7008 I UiAutomation: Initialized for user 0 on display 0
+11-19 22:17:25.235  7008  7008 W UiAutomation: Created with deprecatead constructor, assumes DEFAULT_DISPLAY
+11-19 22:17:25.226  7008  7008 W main    : type=1400 audit(0.0:172): avc:  denied  { read } for  name="u:object_r:build_attestation_prop:s0" dev="tmpfs" ino=86 scontext=u:r:shell:s0 tcontext=u:object_r:build_attestation_prop:s0 tclass=file permissive=0
+11-19 22:17:25.239  6689  6717 D AccessibilityManagerService: changeCurrentUserForTestAutomationIfNeededLocked(0): ignoring because device doesn't support visible background users
+11-19 22:17:25.240  6689  6717 I UiAutomationManager: Registering UiTestAutomationService (id=com.android.server.accessibility/UiAutomation) when called by user 0
+11-19 22:17:25.226  7008  7008 W main    : type=1400 audit(0.0:173): avc:  denied  { read } for  name="u:object_r:build_attestation_prop:s0" dev="tmpfs" ino=86 scontext=u:r:shell:s0 tcontext=u:object_r:build_attestation_prop:s0 tclass=file permissive=0
+11-19 22:17:25.246  6689  6717 W WindowMagnificationMgr: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+11-19 22:17:26.961  6689  6707 W WindowManager: Keyguard drawn timeout. Setting mKeyguardDrawComplete
+11-19 22:17:27.310  6689  6899 D BufferPoolAccessor2.0: bufferpool2 0x7f3adf591458 : 0(0 size) total buffers - 0(0 size) used buffers - 1/7 (recycle/alloc) - 6/18 (fetch/transfer)
+11-19 22:17:27.310  6689  6899 D BufferPoolAccessor2.0: evictor expired: 1, evicted: 1
+11-19 22:17:27.537  6689  6722 I ActivityManager: Test idle passed
+11-19 22:17:27.730   473   851 D BufferPoolAccessor2.0: bufferpool2 0x7ab1f8edca38 : 0(0 size) total buffers - 0(0 size) used buffers - 8/10 (recycle/alloc) - 2/9 (fetch/transfer)
+11-19 22:17:27.730   473   851 D BufferPoolAccessor2.0: bufferpool2 0x7ab1f8edef38 : 0(0 size) total buffers - 0(0 size) used buffers - 8/10 (recycle/alloc) - 2/9 (fetch/transfer)
+11-19 22:17:27.730   473   851 D BufferPoolAccessor2.0: bufferpool2 0x7ab1f8edd378 : 0(0 size) total buffers - 0(0 size) used buffers - 9/11 (recycle/alloc) - 2/10 (fetch/transfer)
+11-19 22:17:27.730   473   851 D BufferPoolAccessor2.0: bufferpool2 0x7ab1f8ed84d8 : 0(0 size) total buffers - 0(0 size) used buffers - 5/7 (recycle/alloc) - 2/6 (fetch/transfer)
+11-19 22:17:27.730   473   851 D BufferPoolAccessor2.0: bufferpool2 0x7ab1f8eda538 : 0(0 size) total buffers - 0(0 size) used buffers - 13/15 (recycle/alloc) - 2/14 (fetch/transfer)
+11-19 22:17:27.730   473   851 D BufferPoolAccessor2.0: bufferpool2 0x7ab1f8eddcb8 : 0(0 size) total buffers - 0(0 size) used buffers - 13/15 (recycle/alloc) - 2/14 (fetch/transfer)
+11-19 22:17:27.730   473   851 D BufferPoolAccessor2.0: evictor expired: 6, evicted: 6
+11-19 22:17:28.310  6689  6899 D BufferPoolAccessor2.0: bufferpool2 0x7f3adf58f898 : 0(0 size) total buffers - 0(0 size) used buffers - 1/7 (recycle/alloc) - 6/34 (fetch/transfer)
+11-19 22:17:28.310  6689  6899 D BufferPoolAccessor2.0: bufferpool2 0x7f3adf58e3c8 : 0(0 size) total buffers - 0(0 size) used buffers - 1/7 (recycle/alloc) - 6/26 (fetch/transfer)
+11-19 22:17:28.310  6689  6899 D BufferPoolAccessor2.0: bufferpool2 0x7f3adf58b7d8 : 0(0 size) total buffers - 0(0 size) used buffers - 1/7 (recycle/alloc) - 6/24 (fetch/transfer)
+11-19 22:17:28.310  6689  6899 D BufferPoolAccessor2.0: bufferpool2 0x7f3adf58c5b8 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/34 (fetch/transfer)
+11-19 22:17:28.310  6689  6899 D BufferPoolAccessor2.0: bufferpool2 0x7f3adf591b48 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/24 (fetch/transfer)
+11-19 22:17:28.310  6689  6899 D BufferPoolAccessor2.0: evictor expired: 5, evicted: 5
+11-19 22:17:30.248  7008  7008 D AndroidRuntime: Shutting down VM
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: FATAL EXCEPTION: main
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: PID: 7008
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: java.lang.RuntimeException: java.util.concurrent.TimeoutException: Timeout while connecting UiAutomation@38b1014[id=-1, displayId=0, flags=0]
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	at android.app.UiAutomation.connect(UiAutomation.java:328)
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	at com.android.uiautomator.core.UiAutomationShellWrapper.connect(UiAutomationShellWrapper.java:31)
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	at com.android.commands.uiautomator.DumpCommand.run(DumpCommand.java:78)
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	at com.android.commands.uiautomator.Launcher.main(Launcher.java:83)
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:359)
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: Caused by: java.util.concurrent.TimeoutException: Timeout while connecting UiAutomation@38b1014[id=-1, displayId=0, flags=0]
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	at android.app.UiAutomation.connectWithTimeout(UiAutomation.java:405)
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	at android.app.UiAutomation.connect(UiAutomation.java:326)
+11-19 22:17:30.248  7008  7008 E AndroidRuntime: 	... 5 more
+11-19 22:17:30.249  7008  7008 E IPCThreadState: Failed to get extended error: Bad file descriptor
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: Error reporting crash
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: java.lang.RuntimeException: Bad file descriptor
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.os.BinderProxy.transactNative(Native Method)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.os.IServiceManager$Stub$Proxy.checkService(IServiceManager.java:443)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.os.ServiceManagerProxy.getService(ServiceManagerNative.java:63)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.os.ServiceManager.rawGetService(ServiceManager.java:378)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.os.ServiceManager.getService(ServiceManager.java:147)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.app.ActivityManager$3.create(ActivityManager.java:5214)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.app.ActivityManager$3.create(ActivityManager.java:5211)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.util.Singleton.get(Singleton.java:43)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at android.app.ActivityManager.getService(ActivityManager.java:5202)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$KillApplicationHandler.uncaughtException(RuntimeInit.java:160)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1071)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1066)
+11-19 22:17:30.250  7008  7008 E AndroidRuntime: 	at java.lang.Thread.dispatchUncaughtException(Thread.java:2306)
+11-19 22:17:30.250  7008  7008 I Process : Sending signal. PID: 7008 SIG: 9
+11-19 22:17:30.260  6689  6717 W WindowMagnificationMgr: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+11-19 22:17:30.261  6689  6867 W WindowMagnificationMgr: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+11-19 22:17:30.261  6689  6867 V UiAutomationManager: UiAutomation service owner died
+11-19 22:17:30.501     0     0 I logd    : logdr: UID=2000 GID=2000 PID=7025 n tail=0 logMask=99 pid=0 start=0ns deadline=0ns
