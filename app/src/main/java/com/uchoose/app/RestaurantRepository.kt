@@ -49,9 +49,6 @@ object RestaurantRepository {
     private const val BASE = "https://nominatim.openstreetmap.org/search"
     private const val USER_AGENT = "uChoose-Android/1.0 (github.com/tylertneal/uchoose)"
 
-    private const val NEAR_RADIUS = 8_000   // ~5 miles
-    private const val WIDE_RADIUS = 24_000  // ~15 miles, used only if nearby is sparse
-
     private val fineCuisines = setOf(
         "steak_house", "steakhouse", "french", "fine_dining", "seafood",
         "oyster", "wine_bar",
@@ -80,35 +77,36 @@ object RestaurantRepository {
     private var lastRequestAt = 0L
 
     /** Called from the home screen so results are ready before a category is tapped. */
-    suspend fun prefetch(lat: Double, lon: Double) {
-        runCatching { base(lat, lon, NEAR_RADIUS) }
+    suspend fun prefetch(lat: Double, lon: Double, radiusMeters: Int) {
+        runCatching { base(lat, lon, radiusMeters) }
     }
 
-    suspend fun find(category: Category, lat: Double, lon: Double): List<Restaurant> {
-        var picked = filter(category, pool(category, lat, lon, NEAR_RADIUS))
-        if (picked.size < 4) {
-            picked = filter(category, pool(category, lat, lon, WIDE_RADIUS))
-        }
-        return picked.take(12).shuffled()
-    }
-
-    private suspend fun pool(category: Category, lat: Double, lon: Double, radius: Int): List<Restaurant> {
-        val base = base(lat, lon, radius)
-        return if (category == Category.FINE_DINING) base + fineExtras(lat, lon, radius) else base
-    }
-
-    private fun filter(category: Category, all: List<Restaurant>): List<Restaurant> =
-        all.filter { matches(category, it) }
+    /** Restaurants of [category] no farther than [radiusMeters] from (lat, lon). */
+    suspend fun find(category: Category, lat: Double, lon: Double, radiusMeters: Int): List<Restaurant> {
+        val pool = base(lat, lon, radiusMeters) +
+            if (category == Category.FINE_DINING) fineExtras(lat, lon, radiusMeters) else emptyList()
+        return pool
+            .filter { it.distanceMeters <= radiusMeters && matches(category, it) }
             .distinctBy { it.name.lowercase() }
             .sortedBy { it.distanceMeters }
+            .take(12)
+            .shuffled()
+    }
 
-    /** Fast food + restaurants: two quick searches. */
+    // Nominatim returns at most 40 places per search, so wider circles get a second page.
+    private fun pagesFor(radius: Int) = if (radius > 8_100) 2 else 1
+
+    /** Fast food + restaurants. */
     private suspend fun base(lat: Double, lon: Double, radius: Int) = cached("base-$radius", lat, lon) {
-        search("[amenity=fast_food]", lat, lon, radius) + search("[amenity=restaurant]", lat, lon, radius)
+        val pages = pagesFor(radius)
+        search("[amenity=fast_food]", lat, lon, radius, pages) +
+            search("[amenity=restaurant]", lat, lon, radius, pages)
     }
 
     private suspend fun fineExtras(lat: Double, lon: Double, radius: Int) = cached("fine-$radius", lat, lon) {
-        fineSearches.flatMap { term -> runCatching { search(term, lat, lon, radius) }.getOrDefault(emptyList()) }
+        fineSearches.flatMap { term ->
+            runCatching { search(term, lat, lon, radius, 1) }.getOrDefault(emptyList())
+        }
     }
 
     private suspend fun cached(
@@ -141,26 +139,37 @@ object RestaurantRepository {
         return if (category == Category.FINE_DINING) looksFine else !looksFine
     }
 
-    /** One Nominatim search inside a box around us, at most one request per second. */
-    private suspend fun search(q: String, lat: Double, lon: Double, radius: Int): List<Restaurant> {
+    /** Nominatim search inside a box around us, at most one request per second. */
+    private suspend fun search(q: String, lat: Double, lon: Double, radius: Int, pages: Int): List<Restaurant> {
         val dLat = radius / 111_320.0
         val dLon = radius / (111_320.0 * cos(Math.toRadians(lat)))
         val viewbox = "${lon - dLon},${lat + dLat},${lon + dLon},${lat - dLat}"
-        val url = BASE +
-            "?q=" + URLEncoder.encode(q, "UTF-8") +
-            "&viewbox=" + URLEncoder.encode(viewbox, "UTF-8") +
-            "&bounded=1&limit=40&format=jsonv2&addressdetails=1&extratags=1"
+        val results = mutableListOf<Restaurant>()
+        val seenIds = mutableListOf<Long>()
 
-        val json = requestMutex.withLock {
-            val wait = 1_100 - (System.currentTimeMillis() - lastRequestAt)
-            if (wait > 0) delay(wait)
-            try {
-                withContext(Dispatchers.IO) { get(url) }
-            } finally {
-                lastRequestAt = System.currentTimeMillis()
+        repeat(pages) {
+            var url = BASE +
+                "?q=" + URLEncoder.encode(q, "UTF-8") +
+                "&viewbox=" + URLEncoder.encode(viewbox, "UTF-8") +
+                "&bounded=1&limit=40&format=jsonv2&addressdetails=1&extratags=1"
+            if (seenIds.isNotEmpty()) {
+                url += "&exclude_place_ids=" + seenIds.joinToString(",")
             }
+            val json = requestMutex.withLock {
+                val wait = 1_100 - (System.currentTimeMillis() - lastRequestAt)
+                if (wait > 0) delay(wait)
+                try {
+                    withContext(Dispatchers.IO) { get(url) }
+                } finally {
+                    lastRequestAt = System.currentTimeMillis()
+                }
+            }
+            val (page, ids) = parse(json, lat, lon)
+            results += page
+            seenIds += ids
+            if (ids.size < 40) return results // no more pages
         }
-        return parse(json, lat, lon)
+        return results
     }
 
     private fun get(url: String): String {
@@ -179,11 +188,13 @@ object RestaurantRepository {
         }
     }
 
-    private fun parse(json: String, myLat: Double, myLon: Double): List<Restaurant> {
+    private fun parse(json: String, myLat: Double, myLon: Double): Pair<List<Restaurant>, List<Long>> {
         val arr = JSONArray(json)
         val out = mutableListOf<Restaurant>()
+        val ids = mutableListOf<Long>()
         for (i in 0 until arr.length()) {
             val el = arr.getJSONObject(i)
+            el.optLong("place_id", -1L).takeIf { it > 0 }?.let { ids += it }
             val type = el.optString("type")
             if (type != "restaurant" && type != "fast_food") continue
             val name = el.optString("name").takeIf { it.isNotBlank() } ?: continue
@@ -210,7 +221,7 @@ object RestaurantRepository {
                 distanceMeters = distance(myLat, myLon, lat, lon),
             )
         }
-        return out
+        return out to ids
     }
 
     fun distance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {

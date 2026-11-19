@@ -1,6 +1,7 @@
 package com.uchoose.app
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -18,6 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -79,11 +82,15 @@ fun App() {
         context, Manifest.permission.ACCESS_COARSE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED
 
+    val prefs = remember { context.getSharedPreferences("uchoose", Context.MODE_PRIVATE) }
+    var radiusMiles by remember { mutableIntStateOf(prefs.getInt("radius_miles", 5)) }
+    val radiusMeters = (radiusMiles * 1609.344).toInt()
+
     // Warm up location + restaurant data while the user is still on the home screen.
-    LaunchedEffect(Unit) {
+    LaunchedEffect(radiusMiles) {
         if (hasLocation()) {
             val loc = LocationHelper.current(context)
-            if (loc != null) RestaurantRepository.prefetch(loc.latitude, loc.longitude)
+            if (loc != null) RestaurantRepository.prefetch(loc.latitude, loc.longitude, radiusMeters)
         }
     }
 
@@ -112,7 +119,14 @@ fun App() {
 
     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
         when (val s = screen) {
-            Screen.Home -> HomeScreen(permissionDenied) { cat ->
+            Screen.Home -> HomeScreen(
+                permissionDenied = permissionDenied,
+                radiusMiles = radiusMiles,
+                onRadiusChange = {
+                    radiusMiles = it
+                    prefs.edit().putInt("radius_miles", it).apply()
+                },
+            ) { cat ->
                 if (hasLocation()) {
                     screen = Screen.Wheel(cat)
                 } else {
@@ -127,6 +141,7 @@ fun App() {
             }
             is Screen.Wheel -> WheelScreen(
                 category = s.category,
+                radiusMiles = radiusMiles,
                 onBack = { screen = Screen.Home },
                 onChosen = { screen = Screen.Result(s.category, it) },
             )
@@ -142,12 +157,17 @@ fun App() {
 // ---------- Home ----------
 
 @Composable
-fun HomeScreen(permissionDenied: Boolean, onPick: (Category) -> Unit) {
+fun HomeScreen(
+    permissionDenied: Boolean,
+    radiusMiles: Int,
+    onRadiusChange: (Int) -> Unit,
+    onPick: (Category) -> Unit,
+) {
     Column(
         Modifier.fillMaxSize().padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
+        Spacer(Modifier.weight(1f))
         Text("uChoose", style = Type.Display)
         Spacer(Modifier.height(8.dp))
         Text("Where shall we dine?", style = Type.Body.copy(fontSize = 17.sp))
@@ -168,6 +188,49 @@ fun HomeScreen(permissionDenied: Boolean, onPick: (Category) -> Unit) {
                 style = Type.Body.copy(fontSize = 13.sp),
                 textAlign = TextAlign.Center,
             )
+        }
+
+        Spacer(Modifier.weight(1f))
+        RadiusPicker(radiusMiles, onRadiusChange)
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+private val radiusOptions = listOf(1, 3, 5, 10, 15, 25)
+
+/** "WITHIN" label and a row of mile options; the selected one is gold with a thin underline. */
+@Composable
+fun RadiusPicker(selected: Int, onSelect: (Int) -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("WITHIN", style = Type.Label.copy(fontSize = 11.sp, color = Palette.Muted))
+        Spacer(Modifier.height(10.dp))
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            radiusOptions.forEach { miles ->
+                val isSel = miles == selected
+                Column(
+                    Modifier
+                        .clickable { onSelect(miles) }
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        "$miles mi",
+                        style = Type.Body.copy(
+                            fontSize = 15.sp,
+                            color = if (isSel) Palette.Gold else Palette.Muted,
+                        ),
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    HorizontalDivider(
+                        Modifier.width(20.dp),
+                        color = if (isSel) Palette.Gold else Color.Transparent,
+                        thickness = 1.dp,
+                    )
+                }
+            }
         }
     }
 }
@@ -198,7 +261,12 @@ private sealed interface LoadState {
 }
 
 @Composable
-fun WheelScreen(category: Category, onBack: () -> Unit, onChosen: (Restaurant) -> Unit) {
+fun WheelScreen(
+    category: Category,
+    radiusMiles: Int,
+    onBack: () -> Unit,
+    onChosen: (Restaurant) -> Unit,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf<LoadState>(LoadState.Loading) }
@@ -207,7 +275,7 @@ fun WheelScreen(category: Category, onBack: () -> Unit, onChosen: (Restaurant) -
     var spinning by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Finding your location…") }
 
-    LaunchedEffect(category, attempt) {
+    LaunchedEffect(category, attempt, radiusMiles) {
         state = LoadState.Loading
         status = "Finding your location…"
         state = try {
@@ -217,10 +285,16 @@ fun WheelScreen(category: Category, onBack: () -> Unit, onChosen: (Restaurant) -
                 LoadState.Error("Couldn't get your location. Make sure Location is turned on.")
             } else {
                 val list = withTimeoutOrNull(30_000) {
-                    RestaurantRepository.find(category, loc.latitude, loc.longitude)
+                    RestaurantRepository.find(
+                        category, loc.latitude, loc.longitude, (radiusMiles * 1609.344).toInt(),
+                    )
                 } ?: throw IllegalStateException("Timed out")
                 if (list.size < 2) {
-                    LoadState.Error("No ${category.title.lowercase()} spots found nearby.")
+                    LoadState.Error(
+                        "No ${category.title.lowercase()} spots found within $radiusMiles " +
+                            (if (radiusMiles == 1) "mile" else "miles") +
+                            ". Try a larger distance on the home screen.",
+                    )
                 } else {
                     LoadState.Ready(list)
                 }
@@ -294,7 +368,7 @@ fun WheelScreen(category: Category, onBack: () -> Unit, onChosen: (Restaurant) -
                 )
                 Spacer(Modifier.height(28.dp))
                 Text(
-                    "${items.size} places nearby",
+                    "${items.size} places within $radiusMiles mi",
                     style = Type.Body.copy(fontSize = 13.sp),
                 )
             }
