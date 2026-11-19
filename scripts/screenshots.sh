@@ -13,6 +13,14 @@ adb shell pm grant $PKG android.permission.ACCESS_FINE_LOCATION
 adb shell pm grant $PKG android.permission.ACCESS_COARSE_LOCATION
 adb shell settings put secure location_mode 3
 
+# Let the freshly booted emulator settle, then turn off its home-screen app
+# (it tends to freeze on CI and cover everything with a "not responding" popup)
+sleep 30
+for launcher in $(adb shell cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME | grep / | cut -d/ -f1 | sort -u); do
+  [ "$launcher" != "$PKG" ] && adb shell pm disable-user --user 0 "$launcher" || true
+done
+close_popups() { adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1; }
+
 # Keep the screen on for the whole run
 adb shell svc power stayon true
 adb shell settings put system screen_off_timeout 1800000
@@ -54,6 +62,7 @@ for m in re.finditer(r"<node [^>]*?text=\"([^\"]*)\"[^>]*?bounds=\"\[(\d+),(\d+)
 
 wait_for() {  # wait_for TEXT SECONDS
   for _ in $(seq 1 "$2"); do
+    close_popups
     [ -n "$(find_text "$1")" ] && return 0
     sleep 1
   done
@@ -61,7 +70,7 @@ wait_for() {  # wait_for TEXT SECONDS
 }
 
 tap() { read -r x y <<< "$(find_text "$1")"; echo "tap $1 at $x,$y"; adb shell input tap "$x" "$y"; }
-shot() { adb exec-out screencap -p > "$OUT/$1.png"; echo "saved $1"; }
+shot() { close_popups; sleep 1; adb exec-out screencap -p > "$OUT/$1.png"; echo "saved $1"; }
 
 adb shell am start -n $PKG/.MainActivity
 wait_for "uChoose" 30
