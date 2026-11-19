@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 
 sealed interface Screen {
@@ -215,7 +216,9 @@ fun WheelScreen(category: Category, onBack: () -> Unit, onChosen: (Restaurant) -
             if (loc == null) {
                 LoadState.Error("Couldn't get your location. Make sure Location is turned on.")
             } else {
-                val list = RestaurantRepository.find(category, loc.latitude, loc.longitude)
+                val list = withTimeoutOrNull(30_000) {
+                    RestaurantRepository.find(category, loc.latitude, loc.longitude)
+                } ?: throw IllegalStateException("Timed out")
                 if (list.size < 2) {
                     LoadState.Error("No ${category.title.lowercase()} spots found nearby.")
                 } else {

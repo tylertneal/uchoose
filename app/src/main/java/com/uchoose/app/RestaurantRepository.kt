@@ -1,18 +1,14 @@
 package com.uchoose.app
 
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
-import org.json.JSONObject
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -37,14 +33,11 @@ data class Restaurant(
 }
 
 /**
- * Finds restaurants with OpenStreetMap's free Overpass API (no key needed).
+ * Finds restaurants with Nominatim, OpenStreetMap's free search service (no key needed).
+ * It answers in well under a second, unlike the public Overpass servers, which are often overloaded.
  *
- * Speed tricks:
- *  - ONE request fetches fast food and restaurants together, so all three
- *    categories come from the same result.
- *  - The request goes to several public servers at once and the first answer wins.
- *  - Results are cached for 30 minutes, and the home screen pre-loads them in the
- *    background, so tapping a category is usually instant.
+ * Nominatim's rules: identify the app in the User-Agent and send at most one request per second.
+ * Results are cached for 30 minutes and pre-loaded from the home screen.
  *
  * OSM has no price level, so the categories are a best guess:
  *  - Fast Food   = amenity=fast_food
@@ -53,12 +46,8 @@ data class Restaurant(
  */
 object RestaurantRepository {
 
-    private val endpoints = listOf(
-        "https://overpass-api.de/api/interpreter",
-        "https://overpass.kumi.systems/api/interpreter",
-        "https://overpass.private.coffee/api/interpreter",
-        "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-    )
+    private const val BASE = "https://nominatim.openstreetmap.org/search"
+    private const val USER_AGENT = "uChoose-Android/1.0 (github.com/tylertneal/uchoose)"
 
     private const val NEAR_RADIUS = 8_000   // ~5 miles
     private const val WIDE_RADIUS = 24_000  // ~15 miles, used only if nearby is sparse
@@ -74,6 +63,9 @@ object RestaurantRepository {
         "grille", "oyster", "oysters", "wine", "chateau", "supper club",
     ).map { Regex("\\b${Regex.escape(it)}\\b") }
 
+    /** Extra searches that surface upscale places a generic "restaurant" search may miss. */
+    private val fineSearches = listOf("steakhouse", "seafood", "bistro")
+
     private val chainSitDown = listOf(
         "applebee", "chili's", "olive garden", "denny", "ihop", "cracker barrel",
         "red robin", "tgi friday", "buffalo wild", "texas roadhouse", "outback",
@@ -81,24 +73,28 @@ object RestaurantRepository {
         "perkins", "golden corral", "o'charley", "friendly's", "hooters",
     )
 
-    // Network calls run here so a slow server we've stopped waiting on can't block anything.
-    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    private data class Cached(val lat: Double, val lon: Double, val radius: Int, val time: Long, val items: List<Restaurant>)
-    private val cache = mutableMapOf<Int, Cached>()
-    private val mutex = Mutex()
+    private data class Cached(val lat: Double, val lon: Double, val time: Long, val items: List<Restaurant>)
+    private val cache = mutableMapOf<String, Cached>()
+    private val cacheMutex = Mutex()
+    private val requestMutex = Mutex()
+    private var lastRequestAt = 0L
 
     /** Called from the home screen so results are ready before a category is tapped. */
     suspend fun prefetch(lat: Double, lon: Double) {
-        runCatching { nearby(lat, lon, NEAR_RADIUS) }
+        runCatching { base(lat, lon, NEAR_RADIUS) }
     }
 
     suspend fun find(category: Category, lat: Double, lon: Double): List<Restaurant> {
-        var picked = filter(category, nearby(lat, lon, NEAR_RADIUS))
+        var picked = filter(category, pool(category, lat, lon, NEAR_RADIUS))
         if (picked.size < 4) {
-            picked = filter(category, nearby(lat, lon, WIDE_RADIUS))
+            picked = filter(category, pool(category, lat, lon, WIDE_RADIUS))
         }
         return picked.take(12).shuffled()
+    }
+
+    private suspend fun pool(category: Category, lat: Double, lon: Double, radius: Int): List<Restaurant> {
+        val base = base(lat, lon, radius)
+        return if (category == Category.FINE_DINING) base + fineExtras(lat, lon, radius) else base
     }
 
     private fun filter(category: Category, all: List<Restaurant>): List<Restaurant> =
@@ -106,19 +102,31 @@ object RestaurantRepository {
             .distinctBy { it.name.lowercase() }
             .sortedBy { it.distanceMeters }
 
-    private suspend fun nearby(lat: Double, lon: Double, radius: Int): List<Restaurant> =
-        mutex.withLock {
-            cache[radius]?.let { c ->
-                val fresh = System.currentTimeMillis() - c.time < 30 * 60 * 1000
-                if (fresh && distance(lat, lon, c.lat, c.lon) < 800) {
-                    // Recompute distances from where we are now.
-                    return@withLock c.items.map { it.copy(distanceMeters = distance(lat, lon, it.lat, it.lon)) }
-                }
+    /** Fast food + restaurants: two quick searches. */
+    private suspend fun base(lat: Double, lon: Double, radius: Int) = cached("base-$radius", lat, lon) {
+        search("[amenity=fast_food]", lat, lon, radius) + search("[amenity=restaurant]", lat, lon, radius)
+    }
+
+    private suspend fun fineExtras(lat: Double, lon: Double, radius: Int) = cached("fine-$radius", lat, lon) {
+        fineSearches.flatMap { term -> runCatching { search(term, lat, lon, radius) }.getOrDefault(emptyList()) }
+    }
+
+    private suspend fun cached(
+        key: String,
+        lat: Double,
+        lon: Double,
+        load: suspend () -> List<Restaurant>,
+    ): List<Restaurant> = cacheMutex.withLock {
+        cache[key]?.let { c ->
+            val fresh = System.currentTimeMillis() - c.time < 30 * 60 * 1000
+            if (fresh && distance(lat, lon, c.lat, c.lon) < 800) {
+                return@withLock c.items.map { it.copy(distanceMeters = distance(lat, lon, it.lat, it.lon)) }
             }
-            val items = query(lat, lon, radius)
-            cache[radius] = Cached(lat, lon, radius, System.currentTimeMillis(), items)
-            items
         }
+        val items = load()
+        cache[key] = Cached(lat, lon, System.currentTimeMillis(), items)
+        items
+    }
 
     private fun matches(category: Category, r: Restaurant): Boolean {
         if (category == Category.FAST_FOOD) return r.isFastFood
@@ -133,55 +141,35 @@ object RestaurantRepository {
         return if (category == Category.FINE_DINING) looksFine else !looksFine
     }
 
-    private suspend fun query(lat: Double, lon: Double, radius: Int): List<Restaurant> {
-        val ql = """
-            [out:json][timeout:20];
-            (
-              node["amenity"~"^(restaurant|fast_food)$"]["name"](around:$radius,$lat,$lon);
-              way["amenity"~"^(restaurant|fast_food)$"]["name"](around:$radius,$lat,$lon);
-            );
-            out center tags;
-        """.trimIndent()
-        val body = "data=" + URLEncoder.encode(ql, "UTF-8")
-        val json = withTimeout(25_000) { raceEndpoints(body) }
+    /** One Nominatim search inside a box around us, at most one request per second. */
+    private suspend fun search(q: String, lat: Double, lon: Double, radius: Int): List<Restaurant> {
+        val dLat = radius / 111_320.0
+        val dLon = radius / (111_320.0 * cos(Math.toRadians(lat)))
+        val viewbox = "${lon - dLon},${lat + dLat},${lon + dLon},${lat - dLat}"
+        val url = BASE +
+            "?q=" + URLEncoder.encode(q, "UTF-8") +
+            "&viewbox=" + URLEncoder.encode(viewbox, "UTF-8") +
+            "&bounded=1&limit=40&format=jsonv2&addressdetails=1&extratags=1"
+
+        val json = requestMutex.withLock {
+            val wait = 1_100 - (System.currentTimeMillis() - lastRequestAt)
+            if (wait > 0) delay(wait)
+            try {
+                withContext(Dispatchers.IO) { get(url) }
+            } finally {
+                lastRequestAt = System.currentTimeMillis()
+            }
+        }
         return parse(json, lat, lon)
     }
 
-    /** Sends the same request to every server at once and returns the first good answer. */
-    private suspend fun raceEndpoints(body: String): String {
-        val winner = CompletableDeferred<String>()
-        val failures = AtomicInteger(0)
-        var lastError: Exception? = null
-        endpoints.forEach { endpoint ->
-            ioScope.launch {
-                try {
-                    val text = post(endpoint, body)
-                    // Overpass sometimes answers 200 with an error instead of data.
-                    if (!text.trimStart().startsWith("{") || !text.contains("\"elements\"")) {
-                        throw IllegalStateException("Bad response from $endpoint")
-                    }
-                    winner.complete(text)
-                } catch (e: Exception) {
-                    lastError = e
-                    if (failures.incrementAndGet() == endpoints.size) {
-                        winner.completeExceptionally(lastError ?: e)
-                    }
-                }
-            }
-        }
-        return winner.await()
-    }
-
-    private fun post(endpoint: String, body: String): String {
-        val conn = URL(endpoint).openConnection() as HttpURLConnection
+    private fun get(url: String): String {
+        val conn = URL(url).openConnection() as HttpURLConnection
         try {
-            conn.requestMethod = "POST"
             conn.connectTimeout = 8_000
-            conn.readTimeout = 22_000
-            conn.doOutput = true
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "uChoose-Android/1.0")
-            conn.outputStream.use { it.write(body.toByteArray()) }
+            conn.readTimeout = 12_000
+            conn.setRequestProperty("User-Agent", USER_AGENT)
+            conn.setRequestProperty("Accept-Language", "en")
             if (conn.responseCode !in 200..299) {
                 throw IllegalStateException("HTTP ${conn.responseCode}")
             }
@@ -192,21 +180,23 @@ object RestaurantRepository {
     }
 
     private fun parse(json: String, myLat: Double, myLon: Double): List<Restaurant> {
-        val elements = JSONObject(json).optJSONArray("elements") ?: return emptyList()
+        val arr = JSONArray(json)
         val out = mutableListOf<Restaurant>()
-        for (i in 0 until elements.length()) {
-            val el = elements.getJSONObject(i)
-            val tags = el.optJSONObject("tags") ?: continue
-            val name = tags.optString("name").takeIf { it.isNotBlank() } ?: continue
-            val center = el.optJSONObject("center")
-            val lat = if (el.has("lat")) el.getDouble("lat") else center?.optDouble("lat") ?: continue
-            val lon = if (el.has("lon")) el.getDouble("lon") else center?.optDouble("lon") ?: continue
+        for (i in 0 until arr.length()) {
+            val el = arr.getJSONObject(i)
+            val type = el.optString("type")
+            if (type != "restaurant" && type != "fast_food") continue
+            val name = el.optString("name").takeIf { it.isNotBlank() } ?: continue
+            val lat = el.optString("lat").toDoubleOrNull() ?: continue
+            val lon = el.optString("lon").toDoubleOrNull() ?: continue
 
+            val addr = el.optJSONObject("address")
             val street = listOfNotNull(
-                tags.optString("addr:housenumber").takeIf { it.isNotBlank() },
-                tags.optString("addr:street").takeIf { it.isNotBlank() },
+                addr?.optString("house_number")?.takeIf { it.isNotBlank() },
+                addr?.optString("road")?.takeIf { it.isNotBlank() },
             ).joinToString(" ")
-            val city = tags.optString("addr:city").takeIf { it.isNotBlank() }
+            val city = listOf("city", "town", "village", "suburb")
+                .firstNotNullOfOrNull { k -> addr?.optString(k)?.takeIf { it.isNotBlank() } }
             val address = listOf(street, city ?: "").filter { it.isNotBlank() }
                 .joinToString(", ").takeIf { it.isNotBlank() }
 
@@ -214,8 +204,8 @@ object RestaurantRepository {
                 name = name,
                 lat = lat,
                 lon = lon,
-                isFastFood = tags.optString("amenity") == "fast_food",
-                cuisine = tags.optString("cuisine").takeIf { it.isNotBlank() },
+                isFastFood = type == "fast_food",
+                cuisine = el.optJSONObject("extratags")?.optString("cuisine")?.takeIf { it.isNotBlank() },
                 address = address,
                 distanceMeters = distance(myLat, myLon, lat, lon),
             )
