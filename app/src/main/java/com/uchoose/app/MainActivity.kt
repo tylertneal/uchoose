@@ -29,6 +29,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
@@ -58,6 +61,7 @@ sealed interface Screen {
     data object Home : Screen
     data class Wheel(val category: Category) : Screen
     data class Result(val category: Category, val restaurant: Restaurant) : Screen
+    data object Hidden : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -82,7 +86,10 @@ fun App() {
         context, Manifest.permission.ACCESS_COARSE_LOCATION,
     ) == PackageManager.PERMISSION_GRANTED
 
-    val prefs = remember { context.getSharedPreferences("uchoose", Context.MODE_PRIVATE) }
+    val prefs = remember {
+        HiddenPlaces.init(context)
+        context.getSharedPreferences("uchoose", Context.MODE_PRIVATE)
+    }
     var radiusMiles by remember { mutableIntStateOf(prefs.getInt("radius_miles", 5)) }
     val radiusMeters = (radiusMiles * 1609.344).toInt()
 
@@ -112,6 +119,7 @@ fun App() {
 
     BackHandler(enabled = screen != Screen.Home) {
         screen = when (val s = screen) {
+            Screen.Hidden -> Screen.Home
             is Screen.Result -> Screen.Wheel(s.category)
             else -> Screen.Home
         }
@@ -122,6 +130,8 @@ fun App() {
             Screen.Home -> HomeScreen(
                 permissionDenied = permissionDenied,
                 radiusMiles = radiusMiles,
+                hiddenCount = HiddenPlaces.places.size,
+                onShowHidden = { screen = Screen.Hidden },
                 onRadiusChange = {
                     radiusMiles = it
                     prefs.edit().putInt("radius_miles", it).apply()
@@ -149,7 +159,12 @@ fun App() {
                 restaurant = s.restaurant,
                 onSpinAgain = { screen = Screen.Wheel(s.category) },
                 onHome = { screen = Screen.Home },
+                onHide = {
+                    HiddenPlaces.hide(s.restaurant)
+                    screen = Screen.Wheel(s.category)
+                },
             )
+            Screen.Hidden -> HiddenScreen(onBack = { screen = Screen.Home })
         }
     }
 }
@@ -160,6 +175,8 @@ fun App() {
 fun HomeScreen(
     permissionDenied: Boolean,
     radiusMiles: Int,
+    hiddenCount: Int,
+    onShowHidden: () -> Unit,
     onRadiusChange: (Int) -> Unit,
     onPick: (Category) -> Unit,
 ) {
@@ -191,6 +208,14 @@ fun HomeScreen(
         }
 
         Spacer(Modifier.weight(1f))
+        if (hiddenCount > 0) {
+            Text(
+                "Hidden places ($hiddenCount)",
+                style = Type.Body.copy(fontSize = 13.sp),
+                modifier = Modifier.clickable(onClick = onShowHidden).padding(8.dp),
+            )
+            Spacer(Modifier.height(16.dp))
+        }
         RadiusPicker(radiusMiles, onRadiusChange)
         Spacer(Modifier.height(24.dp))
     }
@@ -274,8 +299,10 @@ fun WheelScreen(
     val rotation = remember { Animatable(0f) }
     var spinning by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Finding your location…") }
+    var toHide by remember { mutableStateOf<Restaurant?>(null) }
+    val hiddenCount = HiddenPlaces.places.size
 
-    LaunchedEffect(category, attempt, radiusMiles) {
+    LaunchedEffect(category, attempt, radiusMiles, hiddenCount) {
         state = LoadState.Loading
         status = "Finding your location…"
         state = try {
@@ -287,6 +314,7 @@ fun WheelScreen(
                 val list = withTimeoutOrNull(30_000) {
                     RestaurantRepository.find(
                         category, loc.latitude, loc.longitude, (radiusMiles * 1609.344).toInt(),
+                        HiddenPlaces.ids(),
                     )
                 } ?: throw IllegalStateException("Timed out")
                 if (list.size < 2) {
@@ -365,11 +393,17 @@ fun WheelScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                    onLongPressSegment = { i -> toHide = items.getOrNull(i) },
                 )
                 Spacer(Modifier.height(28.dp))
                 Text(
                     "${items.size} places within $radiusMiles mi",
                     style = Type.Body.copy(fontSize = 13.sp),
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Press and hold a name to hide it",
+                    style = Type.Body.copy(fontSize = 12.sp, color = Palette.Muted.copy(alpha = 0.7f)),
                 )
                 Spacer(Modifier.weight(1f))
                 Text(
@@ -379,12 +413,117 @@ fun WheelScreen(
             }
         }
     }
+
+    toHide?.let { r ->
+        HideDialog(
+            name = r.name,
+            onConfirm = {
+                HiddenPlaces.hide(r)
+                toHide = null
+            },
+            onDismiss = { toHide = null },
+        )
+    }
+}
+
+@Composable
+fun HideDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Palette.Surface,
+        shape = RoundedCornerShape(4.dp),
+        title = { Text("Hide this place?", style = Type.Title.copy(fontSize = 20.sp)) },
+        text = {
+            Text(
+                "$name won't appear on your wheel anymore. " +
+                    "You can bring it back from Hidden places on the home screen.",
+                style = Type.Body,
+            )
+        },
+        confirmButton = {
+            Text(
+                "HIDE",
+                style = Type.Label,
+                modifier = Modifier.clickable(onClick = onConfirm).padding(12.dp),
+            )
+        },
+        dismissButton = {
+            Text(
+                "CANCEL",
+                style = Type.Label.copy(color = Palette.Muted),
+                modifier = Modifier.clickable(onClick = onDismiss).padding(12.dp),
+            )
+        },
+    )
+}
+
+// ---------- Hidden places ----------
+
+@Composable
+fun HiddenScreen(onBack: () -> Unit) {
+    val places = HiddenPlaces.places
+    Column(Modifier.fillMaxSize().padding(24.dp)) {
+        Text(
+            "‹  Back",
+            style = Type.Body,
+            modifier = Modifier.clickable(onClick = onBack).padding(8.dp),
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            "HIDDEN PLACES",
+            style = Type.Label,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "These never appear on your wheel.",
+            style = Type.Body,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+        Spacer(Modifier.height(28.dp))
+
+        if (places.isEmpty()) {
+            Text(
+                "Nothing hidden.",
+                style = Type.Body,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+        } else {
+            LazyColumn(Modifier.weight(1f)) {
+                items(places.toList(), key = { it.id }) { place ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            place.name,
+                            style = Type.Body.copy(fontSize = 17.sp, color = Palette.Text),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            "RESTORE",
+                            style = Type.Label.copy(fontSize = 12.sp),
+                            modifier = Modifier.clickable { HiddenPlaces.restore(place) }.padding(8.dp),
+                        )
+                    }
+                    HorizontalDivider(color = Palette.Line, thickness = 0.5.dp)
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            OutlineButton("RESTORE ALL") { HiddenPlaces.restoreAll() }
+        }
+    }
 }
 
 // ---------- Result ----------
 
 @Composable
-fun ResultScreen(restaurant: Restaurant, onSpinAgain: () -> Unit, onHome: () -> Unit) {
+fun ResultScreen(
+    restaurant: Restaurant,
+    onSpinAgain: () -> Unit,
+    onHome: () -> Unit,
+    onHide: () -> Unit,
+) {
     val context = LocalContext.current
     Column(
         Modifier.fillMaxSize().padding(horizontal = 32.dp),
@@ -440,6 +579,12 @@ fun ResultScreen(restaurant: Restaurant, onSpinAgain: () -> Unit, onHome: () -> 
             "Home",
             style = Type.Body,
             modifier = Modifier.clickable(onClick = onHome).padding(8.dp),
+        )
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "Don't show this place again",
+            style = Type.Body.copy(fontSize = 13.sp, color = Palette.Muted.copy(alpha = 0.8f)),
+            modifier = Modifier.clickable(onClick = onHide).padding(8.dp),
         )
     }
 }

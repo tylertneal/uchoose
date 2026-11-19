@@ -25,6 +25,10 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.atan2
+import kotlin.math.sqrt
 
 /**
  * The restaurant wheel. [rotation] is in degrees; the pointer sits at 12 o'clock.
@@ -37,8 +41,30 @@ fun RestaurantWheel(
     spinning: Boolean,
     onSpin: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongPressSegment: (Int) -> Unit = {},
 ) {
-    Box(modifier, contentAlignment = Alignment.Center) {
+    // Press and hold a slice to act on that restaurant. The touch angle is turned back by
+    // the wheel's current rotation to find which slice is under the finger.
+    val pressModifier = Modifier.pointerInput(names, rotation, spinning) {
+        if (spinning || names.isEmpty()) return@pointerInput
+        detectTapGestures(onLongPress = { pos ->
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            val dx = pos.x - cx
+            val dy = pos.y - cy
+            val dist = sqrt(dx * dx + dy * dy)
+            val radius = minOf(size.width, size.height) / 2f
+            val hub = 42.dp.toPx()
+            if (dist < hub || dist > radius) return@detectTapGestures
+            val angle = Math.toDegrees(atan2(dy, dx).toDouble()).toFloat()
+            val sweep = 360f / names.size
+            val unrotated = ((angle - rotation + 90f) % 360f + 360f) % 360f
+            val index = (unrotated / sweep).toInt().coerceIn(0, names.size - 1)
+            onLongPressSegment(index)
+        })
+    }
+
+    Box(modifier.then(pressModifier), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize().rotate(rotation)) {
             val n = names.size.coerceAtLeast(1)
             val sweep = 360f / n

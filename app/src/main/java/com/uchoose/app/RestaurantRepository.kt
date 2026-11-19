@@ -82,11 +82,18 @@ object RestaurantRepository {
     }
 
     /** Restaurants of [category] no farther than [radiusMeters] from (lat, lon). */
-    suspend fun find(category: Category, lat: Double, lon: Double, radiusMeters: Int): List<Restaurant> {
+    suspend fun find(
+        category: Category,
+        lat: Double,
+        lon: Double,
+        radiusMeters: Int,
+        hiddenIds: Set<String> = emptySet(),
+    ): List<Restaurant> {
         val pool = base(lat, lon, radiusMeters) +
             if (category == Category.FINE_DINING) fineExtras(lat, lon, radiusMeters) else emptyList()
         return pool
             .filter { it.distanceMeters <= radiusMeters && matches(category, it) }
+            .filter { it.placeId !in hiddenIds }
             .distinctBy { it.name.lowercase() }
             .sortedBy { it.distanceMeters }
             .take(12)

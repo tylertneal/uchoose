@@ -59,6 +59,15 @@ The result screen shows the restaurant's name, cuisine, address and distance. Ta
 
 > **Note:** Directions open in whatever maps app you use (Google Maps, Waze and others). Spinning again reuses the restaurants it already found, so it's instant.
 
+### 🙈 Hide places you don't like
+Don't want a certain place on your wheel? You can hide it two ways:
+- **On the wheel:** press and hold its name, then tap **Hide**.
+- **On the result screen:** tap **Don't show this place again**.
+
+<p align="center"><img src="docs/screenshots/hide.png" width="250" alt="Hide this place popup"></p>
+
+> **Note:** The next-closest restaurant takes its place on the wheel. Hidden places stay hidden even after you close the app. Changed your mind? Tap **Hidden places** on the home screen to restore one or all of them.
+
 ### ⚡ Fast by design
 - Restaurants start loading in the background as soon as you open the app, so tapping a category is usually instant.
 - Results are kept for 30 minutes, so switching categories or spinning again doesn't search again.

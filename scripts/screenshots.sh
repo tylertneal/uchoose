@@ -82,6 +82,14 @@ sleep 10   # let the loading spinner finish before reading the screen
 if wait_for "SPIN" 20; then
   sleep 2
   shot wheel
+  # Press and hold a slice to the right of the center to show the "hide" popup
+  read -r sx sy <<< "$(find_text "SPIN")"
+  adb shell input swipe $((sx + 300)) "$sy" $((sx + 300)) "$sy" 1500
+  if wait_for "Hide this place?" 10; then
+    shot hide
+    tap "CANCEL"
+    sleep 1
+  fi
   tap "SPIN"
   wait_for "TONIGHT YOU DINE AT" 30 && sleep 1 && shot result
 else
