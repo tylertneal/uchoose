@@ -13,6 +13,12 @@ adb shell pm grant $PKG android.permission.ACCESS_FINE_LOCATION
 adb shell pm grant $PKG android.permission.ACCESS_COARSE_LOCATION
 adb shell settings put secure location_mode 3
 
+# Keep the screen on for the whole run
+adb shell svc power stayon true
+adb shell settings put system screen_off_timeout 1800000
+adb shell input keyevent KEYCODE_WAKEUP
+adb shell wm dismiss-keyguard
+
 # Clean status bar for screenshots
 adb shell settings put global sysui_demo_allowed 1
 adb shell am broadcast -a com.android.systemui.demo -e command enter
@@ -26,7 +32,11 @@ adb shell am broadcast -a com.android.systemui.demo -e command notifications -e 
 GEO=$!
 sleep 6
 
-dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb shell cat /sdcard/ui.xml 2>/dev/null; }
+dump() {
+  adb shell rm -f /sdcard/ui.xml
+  timeout 15 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+  adb shell cat /sdcard/ui.xml 2>/dev/null
+}
 
 # Prints "x y" of the center of the first node whose text matches exactly
 find_text() {
@@ -59,13 +69,14 @@ sleep 8   # let the background pre-load finish
 shot home
 
 tap "SIT DOWN"
-if wait_for "SPIN" 45; then
+sleep 10   # let the loading spinner finish before reading the screen
+if wait_for "SPIN" 20; then
   sleep 2
   shot wheel
   tap "SPIN"
   wait_for "TONIGHT YOU DINE AT" 30 && sleep 1 && shot result
 else
-  shot wheel-error
+  shot debug-wheel
   dump > "$OUT/debug-ui.xml"
   adb logcat -d | tail -200 > "$OUT/debug-logcat.txt"
 fi
