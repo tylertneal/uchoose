@@ -34,7 +34,7 @@ uChoose ends that conversation. Tell it what you're in the mood for and how far 
 ## What it does
 
 ### 🍽 Choose your kind of meal
-The home screen gives you four choices:
+The home screen gives you five choices:
 
 | | What you'll get |
 |---|---|
@@ -42,6 +42,7 @@ The home screen gives you four choices:
 | **Sit Down** | Regular restaurants where you're seated and served. |
 | **Fine Dining** | Steakhouses, bistros, seafood and other upscale spots. |
 | **Coffee & Cafés** | Coffee shops and cafés for a quiet cup or a quick pick-me-up. |
+| **Dessert** | Ice cream, bakeries, donuts, frozen yogurt, candy shops: something sweet. |
 
 > **Note:** Restaurant listings don't include prices, so uChoose sorts places by type and by clues in the name and cuisine. "Fine Dining" looks for words like *steakhouse*, *chophouse*, *bistro* or *grille*, and for cuisines like French and seafood. Big chains like Olive Garden or Applebee's always go under Sit Down. Some places may land in an unexpected category now and then.
 

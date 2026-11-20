@@ -18,6 +18,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -181,44 +184,53 @@ fun HomeScreen(
     onRadiusChange: (Int) -> Unit,
     onPick: (Category) -> Unit,
 ) {
+    // Everything fits on one screen, no scrolling: the cards share whatever height is left
+    // between the header and the distance picker, up to a comfortable maximum each.
     Column(
         Modifier.fillMaxSize().padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(32.dp))
         Text("uChoose", style = Type.Display)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
         Text("Where shall we dine?", style = Type.Body.copy(fontSize = 17.sp))
         Spacer(Modifier.height(12.dp))
         HorizontalDivider(Modifier.width(48.dp), color = Palette.Gold, thickness = 1.dp)
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(20.dp))
 
-        Category.entries.forEach { cat ->
-            CategoryCard(cat) { onPick(cat) }
-            Spacer(Modifier.height(14.dp))
+        Column(
+            Modifier.weight(1f).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+        ) {
+            Category.entries.forEach { cat ->
+                CategoryCard(
+                    cat,
+                    Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(min = 40.dp, max = 84.dp),
+                ) { onPick(cat) }
+            }
         }
 
         if (permissionDenied) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
                 "uChoose needs your location to find restaurants nearby. " +
                     "You can allow it in Settings → Apps → uChoose → Permissions.",
-                style = Type.Body.copy(fontSize = 13.sp),
+                style = Type.Body.copy(fontSize = 12.sp),
                 textAlign = TextAlign.Center,
             )
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(16.dp))
         if (hiddenCount > 0) {
             Text(
                 "Hidden places ($hiddenCount)",
                 style = Type.Body.copy(fontSize = 13.sp),
-                modifier = Modifier.clickable(onClick = onShowHidden).padding(8.dp),
+                modifier = Modifier.clickable(onClick = onShowHidden).padding(6.dp),
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
         }
         RadiusPicker(radiusMiles, onRadiusChange)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
     }
 }
 
@@ -262,19 +274,25 @@ fun RadiusPicker(selected: Int, onSelect: (Int) -> Unit) {
 }
 
 @Composable
-fun CategoryCard(category: Category, onClick: () -> Unit) {
+fun CategoryCard(category: Category, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val shape = RoundedCornerShape(4.dp)
-    Column(
-        Modifier
-            .fillMaxWidth()
+    BoxWithConstraints(
+        modifier
+            .fillMaxHeight()
             .border(1.dp, Palette.Line, shape)
             .clickable(onClick = onClick)
-            .padding(vertical = 20.dp, horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(horizontal = 24.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(category.title.uppercase(), style = Type.Label.copy(fontSize = 15.sp))
-        Spacer(Modifier.height(6.dp))
-        Text(category.subtitle, style = Type.Body)
+        // On short screens the cards shrink; drop the subtitle before anything gets cramped.
+        val roomy = maxHeight >= 64.dp
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(category.title.uppercase(), style = Type.Label.copy(fontSize = 15.sp))
+            if (roomy) {
+                Spacer(Modifier.height(4.dp))
+                Text(category.subtitle, style = Type.Body)
+            }
+        }
     }
 }
 

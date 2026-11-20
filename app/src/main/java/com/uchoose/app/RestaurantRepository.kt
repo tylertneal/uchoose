@@ -24,10 +24,11 @@ enum class Category(
     SIT_DOWN("Sit Down", "Relaxed dining", "sit-down restaurants", "TONIGHT YOU DINE AT"),
     FINE_DINING("Fine Dining", "An elegant evening", "fine dining restaurants", "TONIGHT YOU DINE AT"),
     COFFEE("Coffee & Cafés", "A quiet cup", "coffee shops", "YOUR COFFEE AWAITS AT"),
+    DESSERT("Dessert", "Something sweet", "dessert spots", "TREAT YOURSELF AT"),
 }
 
 /** The OpenStreetMap place type behind each result. */
-enum class Kind { FAST_FOOD, RESTAURANT, CAFE }
+enum class Kind { FAST_FOOD, RESTAURANT, CAFE, DESSERT }
 
 data class Restaurant(
     val name: String,
@@ -53,6 +54,8 @@ data class Restaurant(
  *  - Fine Dining = restaurants whose cuisine or name suggests an upscale place
  *  - Sit Down    = every other restaurant
  *  - Coffee      = amenity=cafe
+ *  - Dessert     = ice cream, bakeries, pastry & candy shops, plus cafés/fast food
+ *                  whose cuisine is donuts, frozen yogurt, crêpes and the like
  */
 object RestaurantRepository {
 
@@ -90,6 +93,7 @@ object RestaurantRepository {
     suspend fun prefetch(lat: Double, lon: Double, radiusMeters: Int) {
         runCatching { base(lat, lon, radiusMeters) }
         runCatching { cafes(lat, lon, radiusMeters) }
+        runCatching { desserts(lat, lon, radiusMeters) }
     }
 
     /** Restaurants of [category] no farther than [radiusMeters] from (lat, lon). */
@@ -102,6 +106,8 @@ object RestaurantRepository {
     ): List<Restaurant> {
         val pool = when (category) {
             Category.COFFEE -> cafes(lat, lon, radiusMeters)
+            Category.DESSERT -> desserts(lat, lon, radiusMeters) +
+                cafes(lat, lon, radiusMeters) + base(lat, lon, radiusMeters)
             Category.FINE_DINING -> base(lat, lon, radiusMeters) + fineExtras(lat, lon, radiusMeters)
             else -> base(lat, lon, radiusMeters)
         }
@@ -126,6 +132,40 @@ object RestaurantRepository {
 
     private suspend fun cafes(lat: Double, lon: Double, radius: Int) = cached("cafe-$radius", lat, lon) {
         search("[amenity=cafe]", lat, lon, radius, pagesFor(radius))
+    }
+
+    private val dessertSearches = listOf(
+        "[amenity=ice_cream]", "[shop=bakery]", "[shop=pastry]", "[shop=confectionery]",
+        "donuts", "ice cream",
+    )
+
+    private val dessertNameWords = listOf(
+        "donut", "donuts", "doughnut", "doughnuts", "ice cream", "creamery", "gelato",
+        "frozen yogurt", "froyo", "yogurt", "custard", "cupcake", "cupcakes", "bakery",
+        "sweets", "dessert", "desserts", "crepe", "crepes", "churro", "churros",
+        "krispy kreme", "dunkin", "baskin", "dairy queen", "cold stone", "rita's",
+        "insomnia cookies", "crumbl", "duck donuts", "menchie", "sweet frog", "nothing bundt",
+    ).map { Regex("\\b${Regex.escape(it)}\\b") }
+
+    private val dessertCuisines = setOf(
+        "dessert", "ice_cream", "frozen_yogurt", "donut", "doughnut", "cupcake",
+        "crepe", "crepes", "waffle", "cake", "pastry", "gelato", "chocolate",
+        "bubble_tea", "milkshake", "shaved_ice", "churros",
+    )
+
+    private suspend fun desserts(lat: Double, lon: Double, radius: Int) = cached("dessert-$radius", lat, lon) {
+        dessertSearches.flatMap { q ->
+            runCatching { search(q, lat, lon, radius, 1) }.getOrDefault(emptyList())
+        }
+    }
+
+    private fun isDessert(r: Restaurant): Boolean {
+        if (r.kind == Kind.DESSERT) return true
+        val name = r.name.lowercase()
+        if (dessertNameWords.any { it.containsMatchIn(name) }) return true
+        if (r.kind == Kind.RESTAURANT) return false
+        val cuisines = r.cuisine?.lowercase()?.split(';', ',')?.map { it.trim() } ?: emptyList()
+        return cuisines.any { it in dessertCuisines }
     }
 
     private suspend fun fineExtras(lat: Double, lon: Double, radius: Int) = cached("fine-$radius", lat, lon) {
@@ -155,6 +195,7 @@ object RestaurantRepository {
         when (category) {
             Category.FAST_FOOD -> return r.kind == Kind.FAST_FOOD
             Category.COFFEE -> return r.kind == Kind.CAFE
+            Category.DESSERT -> return isDessert(r)
             else -> if (r.kind != Kind.RESTAURANT) return false
         }
         val name = r.name.lowercase()
@@ -228,6 +269,7 @@ object RestaurantRepository {
                 "restaurant" -> Kind.RESTAURANT
                 "fast_food" -> Kind.FAST_FOOD
                 "cafe" -> Kind.CAFE
+                "ice_cream", "bakery", "pastry", "confectionery" -> Kind.DESSERT
                 else -> continue
             }
             val name = el.optString("name").takeIf { it.isNotBlank() } ?: continue
