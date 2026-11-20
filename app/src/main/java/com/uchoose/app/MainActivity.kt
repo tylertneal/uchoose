@@ -156,6 +156,7 @@ fun App() {
                 onChosen = { screen = Screen.Result(s.category, it) },
             )
             is Screen.Result -> ResultScreen(
+                category = s.category,
                 restaurant = s.restaurant,
                 onSpinAgain = { screen = Screen.Wheel(s.category) },
                 onHome = { screen = Screen.Home },
@@ -190,11 +191,11 @@ fun HomeScreen(
         Text("Where shall we dine?", style = Type.Body.copy(fontSize = 17.sp))
         Spacer(Modifier.height(12.dp))
         HorizontalDivider(Modifier.width(48.dp), color = Palette.Gold, thickness = 1.dp)
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(40.dp))
 
         Category.entries.forEach { cat ->
             CategoryCard(cat) { onPick(cat) }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
         }
 
         if (permissionDenied) {
@@ -268,7 +269,7 @@ fun CategoryCard(category: Category, onClick: () -> Unit) {
             .fillMaxWidth()
             .border(1.dp, Palette.Line, shape)
             .clickable(onClick = onClick)
-            .padding(vertical = 22.dp, horizontal = 24.dp),
+            .padding(vertical = 20.dp, horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(category.title.uppercase(), style = Type.Label.copy(fontSize = 15.sp))
@@ -319,7 +320,7 @@ fun WheelScreen(
                 } ?: throw IllegalStateException("Timed out")
                 if (list.size < 2) {
                     LoadState.Error(
-                        "No ${category.title.lowercase()} spots found within $radiusMiles " +
+                        "No ${category.noun} found within $radiusMiles " +
                             (if (radiusMiles == 1) "mile" else "miles") +
                             ". Try a larger distance on the home screen.",
                     )
@@ -519,6 +520,7 @@ fun HiddenScreen(onBack: () -> Unit) {
 
 @Composable
 fun ResultScreen(
+    category: Category,
     restaurant: Restaurant,
     onSpinAgain: () -> Unit,
     onHome: () -> Unit,
@@ -530,7 +532,7 @@ fun ResultScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("TONIGHT YOU DINE AT", style = Type.Label)
+        Text(category.resultLabel, style = Type.Label)
         Spacer(Modifier.height(20.dp))
         Text(
             restaurant.name,

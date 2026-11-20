@@ -27,20 +27,21 @@ puts them on a wheel, and picks one for you with a single spin.
 
 We've all been there: "Where do you want to eat?" "I don't know, where do *you* want to eat?"
 
-uChoose ends that conversation. Tell it what *kind* of meal you're in the mood for and how far you're willing to go, and it does the rest. There are no accounts, ads or sign-ups. Open it and spin.
+uChoose ends that conversation. Tell it what you're in the mood for and how far you're willing to go, and it does the rest. There are no accounts, ads or sign-ups. Open it and spin.
 
 ---
 
 ## What it does
 
 ### 🍽 Choose your kind of meal
-The home screen gives you three choices:
+The home screen gives you four choices:
 
 | | What you'll get |
 |---|---|
 | **Fast Food** | Burgers, tacos, sandwiches: anything quick and casual. |
 | **Sit Down** | Regular restaurants where you're seated and served. |
 | **Fine Dining** | Steakhouses, bistros, seafood and other upscale spots. |
+| **Coffee & Cafés** | Coffee shops and cafés for a quiet cup or a quick pick-me-up. |
 
 > **Note:** Restaurant listings don't include prices, so uChoose sorts places by type and by clues in the name and cuisine. "Fine Dining" looks for words like *steakhouse*, *chophouse*, *bistro* or *grille*, and for cuisines like French and seafood. Big chains like Olive Garden or Applebee's always go under Sit Down. Some places may land in an unexpected category now and then.
 

@@ -14,17 +14,26 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-enum class Category(val title: String, val subtitle: String) {
-    FAST_FOOD("Fast Food", "Quick & casual"),
-    SIT_DOWN("Sit Down", "Relaxed dining"),
-    FINE_DINING("Fine Dining", "An elegant evening"),
+enum class Category(
+    val title: String,
+    val subtitle: String,
+    val noun: String,        // used in messages, e.g. "No coffee shops found…"
+    val resultLabel: String, // heading on the result screen
+) {
+    FAST_FOOD("Fast Food", "Quick & casual", "fast food spots", "TONIGHT YOU DINE AT"),
+    SIT_DOWN("Sit Down", "Relaxed dining", "sit-down restaurants", "TONIGHT YOU DINE AT"),
+    FINE_DINING("Fine Dining", "An elegant evening", "fine dining restaurants", "TONIGHT YOU DINE AT"),
+    COFFEE("Coffee & Cafés", "A quiet cup", "coffee shops", "YOUR COFFEE AWAITS AT"),
 }
+
+/** The OpenStreetMap place type behind each result. */
+enum class Kind { FAST_FOOD, RESTAURANT, CAFE }
 
 data class Restaurant(
     val name: String,
     val lat: Double,
     val lon: Double,
-    val isFastFood: Boolean,
+    val kind: Kind,
     val cuisine: String?,
     val address: String?,
     val distanceMeters: Double,
@@ -43,6 +52,7 @@ data class Restaurant(
  *  - Fast Food   = amenity=fast_food
  *  - Fine Dining = restaurants whose cuisine or name suggests an upscale place
  *  - Sit Down    = every other restaurant
+ *  - Coffee      = amenity=cafe
  */
 object RestaurantRepository {
 
@@ -79,6 +89,7 @@ object RestaurantRepository {
     /** Called from the home screen so results are ready before a category is tapped. */
     suspend fun prefetch(lat: Double, lon: Double, radiusMeters: Int) {
         runCatching { base(lat, lon, radiusMeters) }
+        runCatching { cafes(lat, lon, radiusMeters) }
     }
 
     /** Restaurants of [category] no farther than [radiusMeters] from (lat, lon). */
@@ -89,8 +100,11 @@ object RestaurantRepository {
         radiusMeters: Int,
         hiddenIds: Set<String> = emptySet(),
     ): List<Restaurant> {
-        val pool = base(lat, lon, radiusMeters) +
-            if (category == Category.FINE_DINING) fineExtras(lat, lon, radiusMeters) else emptyList()
+        val pool = when (category) {
+            Category.COFFEE -> cafes(lat, lon, radiusMeters)
+            Category.FINE_DINING -> base(lat, lon, radiusMeters) + fineExtras(lat, lon, radiusMeters)
+            else -> base(lat, lon, radiusMeters)
+        }
         return pool
             .filter { it.distanceMeters <= radiusMeters && matches(category, it) }
             .filter { it.placeId !in hiddenIds }
@@ -108,6 +122,10 @@ object RestaurantRepository {
         val pages = pagesFor(radius)
         search("[amenity=fast_food]", lat, lon, radius, pages) +
             search("[amenity=restaurant]", lat, lon, radius, pages)
+    }
+
+    private suspend fun cafes(lat: Double, lon: Double, radius: Int) = cached("cafe-$radius", lat, lon) {
+        search("[amenity=cafe]", lat, lon, radius, pagesFor(radius))
     }
 
     private suspend fun fineExtras(lat: Double, lon: Double, radius: Int) = cached("fine-$radius", lat, lon) {
@@ -134,8 +152,11 @@ object RestaurantRepository {
     }
 
     private fun matches(category: Category, r: Restaurant): Boolean {
-        if (category == Category.FAST_FOOD) return r.isFastFood
-        if (r.isFastFood) return false
+        when (category) {
+            Category.FAST_FOOD -> return r.kind == Kind.FAST_FOOD
+            Category.COFFEE -> return r.kind == Kind.CAFE
+            else -> if (r.kind != Kind.RESTAURANT) return false
+        }
         val name = r.name.lowercase()
         val cuisines = r.cuisine?.lowercase()?.split(';', ',')?.map { it.trim() } ?: emptyList()
         val isChain = chainSitDown.any { name.contains(it) }
@@ -203,7 +224,12 @@ object RestaurantRepository {
             val el = arr.getJSONObject(i)
             el.optLong("place_id", -1L).takeIf { it > 0 }?.let { ids += it }
             val type = el.optString("type")
-            if (type != "restaurant" && type != "fast_food") continue
+            val kind = when (type) {
+                "restaurant" -> Kind.RESTAURANT
+                "fast_food" -> Kind.FAST_FOOD
+                "cafe" -> Kind.CAFE
+                else -> continue
+            }
             val name = el.optString("name").takeIf { it.isNotBlank() } ?: continue
             val lat = el.optString("lat").toDoubleOrNull() ?: continue
             val lon = el.optString("lon").toDoubleOrNull() ?: continue
@@ -222,7 +248,7 @@ object RestaurantRepository {
                 name = name,
                 lat = lat,
                 lon = lon,
-                isFastFood = type == "fast_food",
+                kind = kind,
                 cuisine = el.optJSONObject("extratags")?.optString("cuisine")?.takeIf { it.isNotBlank() },
                 address = address,
                 distanceMeters = distance(myLat, myLon, lat, lon),
