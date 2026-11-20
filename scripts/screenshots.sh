@@ -49,11 +49,11 @@ dump() {
 # Prints "x y" of the center of the first node whose text matches exactly
 find_text() {
   dump | python3 -c '
-import re, sys
+import re, sys, html
 xml = sys.stdin.read()
 want = sys.argv[1]
 for m in re.finditer(r"<node [^>]*?text=\"([^\"]*)\"[^>]*?bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\"", xml):
-    if m.group(1) == want:
+    if html.unescape(m.group(1)) == want:
         x1, y1, x2, y2 = map(int, m.groups()[1:])
         print((x1 + x2) // 2, (y1 + y2) // 2)
         break
