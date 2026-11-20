@@ -3,18 +3,30 @@ package com.uchoose.app
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.mutableStateListOf
+import java.text.Normalizer
 import java.util.Locale
 
-/** A restaurant the user chose never to see again. */
+/** A place the user chose never to see again, at any location. */
 data class HiddenPlace(val id: String, val name: String)
 
-/** Stable identity for a place: its name plus its location rounded to ~100 m. */
-val Restaurant.placeId: String
-    get() = name.trim().lowercase(Locale.US) + "@" +
-        String.format(Locale.US, "%.3f,%.3f", lat, lon)
+/**
+ * Turns a name into a matching key that ignores case, accents, punctuation and spacing,
+ * so "McDonald's", "McDonalds" and "Mcdonald’s" all become "mcdonalds".
+ */
+fun nameKey(name: String): String =
+    Normalizer.normalize(name, Normalizer.Form.NFD)
+        .replace(Regex("\\p{M}+"), "")       // strip accents
+        .lowercase(Locale.US)
+        .replace("&", "and")
+        .replace(Regex("[^a-z0-9]"), "")      // drop apostrophes, spaces, punctuation
+
+/** Keys this restaurant can be hidden by: its name, and its chain brand if the map lists one. */
+val Restaurant.hideKeys: Set<String>
+    get() = setOfNotNull(nameKey(name), brand?.let { nameKey(it) }).filter { it.isNotEmpty() }.toSet()
 
 /**
  * The user's "don't show again" list, saved on the phone so it survives restarts.
+ * Hiding works by name/brand, so hiding one McDonald's hides every McDonald's.
  * [places] is Compose state, so screens update as soon as something is hidden or restored.
  */
 object HiddenPlaces {
@@ -28,17 +40,26 @@ object HiddenPlaces {
         prefs = context.applicationContext.getSharedPreferences("uchoose", Context.MODE_PRIVATE)
         val saved = prefs.getStringSet(KEY, emptySet()).orEmpty().mapNotNull { entry ->
             val tab = entry.indexOf('\t')
-            if (tab <= 0) null else HiddenPlace(entry.substring(0, tab), entry.substring(tab + 1))
-        }
+            if (tab <= 0) return@mapNotNull null
+            val name = entry.substring(tab + 1)
+            // Older versions saved "name@lat,lon" (one location only). Upgrade those to
+            // name-based keys so they now hide every location of that place.
+            HiddenPlace(nameKey(name), name)
+        }.distinctBy { it.id }
         places.clear()
         places.addAll(saved.sortedBy { it.name.lowercase() })
+        save()
     }
 
     fun ids(): Set<String> = places.map { it.id }.toSet()
 
+    fun isHidden(r: Restaurant, hidden: Set<String> = ids()): Boolean = r.hideKeys.any { it in hidden }
+
     fun hide(r: Restaurant) {
-        if (places.any { it.id == r.placeId }) return
-        places.add(HiddenPlace(r.placeId, r.name))
+        if (isHidden(r)) return
+        // Prefer the chain brand (e.g. "McDonald's") so every branch is covered.
+        val label = r.brand?.takeIf { it.isNotBlank() } ?: r.name
+        places.add(HiddenPlace(nameKey(label), label))
         places.sortBy { it.name.lowercase() }
         save()
     }

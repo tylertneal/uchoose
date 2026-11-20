@@ -454,7 +454,7 @@ fun HideDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
         title = { Text("Hide this place?", style = Type.Title.copy(fontSize = 20.sp)) },
         text = {
             Text(
-                "$name won't appear on your wheel anymore. " +
+                "$name won't appear on your wheel anymore, at any location. " +
                     "You can bring it back from Hidden places on the home screen.",
                 style = Type.Body,
             )
@@ -495,7 +495,7 @@ fun HiddenScreen(onBack: () -> Unit) {
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "These never appear on your wheel.",
+            "These never appear on your wheel, at any location.",
             style = Type.Body,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )

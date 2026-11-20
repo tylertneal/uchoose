@@ -105,6 +105,22 @@ if wait_for "SPIN" 20; then
   tap "DESSERT"
   sleep 10
   wait_for "SPIN" 20 && sleep 2 && shot dessert
+
+  # Hide test: hide a fast food place and check no other location of it replaces it
+  adb shell input keyevent KEYCODE_BACK; sleep 2
+  tap "FAST FOOD"
+  sleep 10
+  if wait_for "SPIN" 20; then
+    sleep 2; shot test-ff-before
+    read -r sx sy <<< "$(find_text "SPIN")"
+    adb shell input swipe $((sx + 300)) $((sy + 40)) $((sx + 300)) $((sy + 40)) 1500
+    if wait_for "Hide this place?" 10; then
+      shot test-ff-dialog
+      tap "HIDE"
+      sleep 8
+      wait_for "SPIN" 20 && sleep 2 && shot test-ff-after
+    fi
+  fi
 else
   shot debug-wheel
   dump > "$OUT/debug-ui.xml"

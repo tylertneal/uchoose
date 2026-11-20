@@ -68,7 +68,7 @@ Don't want a certain place on your wheel? You can hide it two ways:
 
 <p align="center"><img src="docs/screenshots/hide.png" width="250" alt="Hide this place popup"></p>
 
-> **Note:** The next-closest restaurant takes its place on the wheel. Hidden places stay hidden even after you close the app. Changed your mind? Tap **Hidden places** on the home screen to restore one or all of them.
+> **Note:** Hiding works for **every location** of that place: hide one McDonald's and you won't see any McDonald's. Small differences in how names are spelled ("McDonald's" vs "McDonalds") don't matter. The next-closest restaurant takes its place on the wheel. Hidden places stay hidden even after you close the app. Changed your mind? Tap **Hidden places** on the home screen to restore one or all of them.
 
 ### ⚡ Fast by design
 - Restaurants start loading in the background as soon as you open the app, so tapping a category is usually instant.

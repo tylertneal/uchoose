@@ -36,6 +36,7 @@ data class Restaurant(
     val lon: Double,
     val kind: Kind,
     val cuisine: String?,
+    val brand: String?,      // chain name from the map data, e.g. "McDonald's"
     val address: String?,
     val distanceMeters: Double,
 ) {
@@ -113,7 +114,7 @@ object RestaurantRepository {
         }
         return pool
             .filter { it.distanceMeters <= radiusMeters && matches(category, it) }
-            .filter { it.placeId !in hiddenIds }
+            .filter { r -> r.hideKeys.none { it in hiddenIds } }
             .distinctBy { it.name.lowercase() }
             .sortedBy { it.distanceMeters }
             .take(12)
@@ -292,6 +293,7 @@ object RestaurantRepository {
                 lon = lon,
                 kind = kind,
                 cuisine = el.optJSONObject("extratags")?.optString("cuisine")?.takeIf { it.isNotBlank() },
+                brand = el.optJSONObject("extratags")?.optString("brand")?.takeIf { it.isNotBlank() },
                 address = address,
                 distanceMeters = distance(myLat, myLon, lat, lon),
             )
