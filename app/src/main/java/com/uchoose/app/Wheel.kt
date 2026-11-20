@@ -1,6 +1,7 @@
 package com.uchoose.app
 
-import android.graphics.Paint
+import android.text.TextPaint
+import android.text.TextUtils
 import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -96,24 +97,36 @@ fun RestaurantWheel(
             }
             drawCircle(Palette.Gold, radius - 1f, center, style = Stroke(width = 3f))
 
-            // names, written outward along each segment's middle
-            val textPaint = Paint().apply {
+            // names, written outward along each segment's middle. Each name must fit between
+            // the SPIN button and the rim: one line if it fits, otherwise two lines, and
+            // anything still too long is cut off with "…".
+            val textPaint = TextPaint().apply {
                 isAntiAlias = true
                 color = Palette.Text.toArgb()
                 typeface = Typeface.SERIF
                 textSize = (if (n > 8) 12.sp else 14.sp).toPx()
             }
+            val innerGap = maxOf(radius * 0.27f, 50.dp.toPx())   // just outside the SPIN button
+            val outerEdge = radius - 10.dp.toPx()                // a little inside the gold rim
+            val available = outerEdge - innerGap
+            // Two lines need room across the slice; on crowded wheels keep them a bit smaller.
+            val twoLineSize = textPaint.textSize * (if (n > 8) 0.9f else 0.95f)
+
             names.forEachIndexed { i, raw ->
-                val label = if (raw.length > 18) raw.take(17) + "…" else raw
                 val mid = -90f + (i + 0.5f) * sweep
+                val lines = fitLabel(raw, textPaint, available, twoLineSize)
                 drawContext.canvas.nativeCanvas.apply {
                     save()
                     translate(center.x, center.y)
                     rotate(mid)
-                    val innerGap = radius * 0.24f
-                    val available = radius * 0.94f - innerGap
-                    val w = textPaint.measureText(label).coerceAtMost(available)
-                    drawText(label, innerGap + (available - w), textPaint.textSize / 3f, textPaint)
+                    val paint = if (lines.size == 1) textPaint else TextPaint(textPaint).apply { textSize = twoLineSize }
+                    val lineHeight = paint.textSize * 1.08f
+                    val firstBaseline = paint.textSize / 3f - lineHeight * (lines.size - 1) / 2f
+                    lines.forEachIndexed { li, line ->
+                        val w = paint.measureText(line)
+                        // right-aligned against the rim
+                        drawText(line, outerEdge - w, firstBaseline + li * lineHeight, paint)
+                    }
                     restore()
                 }
             }
@@ -146,4 +159,34 @@ fun RestaurantWheel(
             Text("SPIN", style = Type.Label.copy(fontSize = 15.sp))
         }
     }
+}
+
+/**
+ * Splits a restaurant name into one or two lines that each fit in [available] pixels.
+ * Falls back to cutting the text off with "…" when even two lines aren't enough.
+ */
+private fun fitLabel(name: String, paint: TextPaint, available: Float, twoLineSize: Float): List<String> {
+    val text = name.trim()
+    if (paint.measureText(text) <= available) return listOf(text)
+
+    val small = TextPaint(paint).apply { textSize = twoLineSize }
+    fun cut(s: String) = TextUtils.ellipsize(s, small, available, TextUtils.TruncateAt.END).toString()
+
+    val words = text.split(Regex("\\s+"))
+    if (words.size < 2) return listOf(TextUtils.ellipsize(text, paint, available, TextUtils.TruncateAt.END).toString())
+
+    // Pick the break that makes the longer of the two lines as short as possible.
+    var best: Pair<String, String>? = null
+    var bestWidth = Float.MAX_VALUE
+    for (k in 1 until words.size) {
+        val a = words.subList(0, k).joinToString(" ")
+        val b = words.subList(k, words.size).joinToString(" ")
+        val w = maxOf(small.measureText(a), small.measureText(b))
+        if (w < bestWidth) {
+            bestWidth = w
+            best = a to b
+        }
+    }
+    val (first, second) = best!!
+    return listOf(cut(first), cut(second))
 }
