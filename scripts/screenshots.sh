@@ -92,6 +92,13 @@ if wait_for "SPIN" 20; then
   fi
   tap "SPIN"
   wait_for "TONIGHT YOU DINE AT" 30 && sleep 1 && shot result
+
+  # Back to home and try the coffee category too
+  adb shell input keyevent KEYCODE_BACK; sleep 1
+  adb shell input keyevent KEYCODE_BACK; sleep 2
+  tap "COFFEE & CAFÉS"
+  sleep 10
+  wait_for "SPIN" 20 && sleep 2 && shot coffee
 else
   shot debug-wheel
   dump > "$OUT/debug-ui.xml"
